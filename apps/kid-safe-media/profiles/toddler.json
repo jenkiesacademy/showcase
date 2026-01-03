@@ -1,0 +1,65 @@
+{
+  "profile": "toddler",
+  "mute_words": [
+    "damn",
+    "hell",
+    "shit",
+    "fuck",
+    "ass",
+    "bitch",
+    "bastard",
+    "crap",
+    "piss",
+    "dick",
+    "cock",
+    "pussy"
+  ],
+  "mute_phrases": [
+    "shut up",
+    "oh my god",
+    "what the hell",
+    "what the fuck",
+    "son of a bitch"
+  ],
+  "skip_scene_words": [
+    "sex",
+    "sexual",
+    "naked",
+    "nude",
+    "orgasm",
+    "masturbat",
+    "porn",
+    "intercourse",
+    "penetration",
+    "oral",
+    "foreplay",
+    "erotic",
+    "seduce",
+    "bedroom",
+    "undress",
+    "strip",
+    "breast",
+    "nipple",
+    "genital",
+    "climax"
+  ],
+  "skip_scene_phrases": [
+    "make love",
+    "have sex",
+    "having sex",
+    "having intercourse",
+    "in bed",
+    "sleep together",
+    "go to bed",
+    "get naked",
+    "take off clothes",
+    "take your clothes off",
+    "sexual act",
+    "sexual activity",
+    "sexual content"
+  ],
+  "skip_scene_padding_seconds": 5,
+  "min_confidence": 0.85,
+  "padding_ms": 120
+}
+

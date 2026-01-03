@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kid Safe Media Sanitizer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #444;
+      font-size: 14px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    button {
+      padding: 12px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #5568d3;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      margin-top: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #5568d3 0%, #653a8a 100%);
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .progress-container {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .progress-container.active {
+      display: block;
+    }
+
+    .progress-output {
+      background: #f5f5f5;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .status {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+
+    .file-path {
+      color: #666;
+      font-size: 12px;
+      margin-top: 5px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎬 Kid Safe Media Sanitizer</h1>
+    <p class="subtitle">Generate kid-safe versions of your movies by silencing profanity</p>
+
+    <form id="sanitizeForm">
+      <div class="form-group">
+        <label>Input Video File</label>
+        <div class="input-group">
+          <input type="text" id="inputPath" placeholder="Select a video file (.mp4 or .mkv)" readonly>
+          <button type="button" id="browseInput">Browse</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Output Folder (Plex Media Location)</label>
+        <div class="input-group">
+          <input type="text" id="outputPath" placeholder="Select output folder for Plex" readonly>
+          <button type="button" id="browseOutput">Browse</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Profile</label>
+        <select id="profile">
+          <option value="">Loading profiles...</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn-primary" id="sanitizeBtn" disabled>
+        Start Sanitization
+      </button>
+    </form>
+
+    <div class="progress-container" id="progressContainer">
+      <label>Progress</label>
+      <div class="progress-output" id="progressOutput"></div>
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <script>
+    const { electronAPI } = window;
+
+    let profiles = [];
+
+    // Load profiles on startup
+    async function loadProfiles() {
+      try {
+        profiles = await electronAPI.getProfiles();
+        const profileSelect = document.getElementById('profile');
+        profileSelect.innerHTML = '<option value="">Select a profile</option>';
+        profiles.forEach(profile => {
+          const option = document.createElement('option');
+          option.value = profile;
+          option.textContent = profile.charAt(0).toUpperCase() + profile.slice(1);
+          profileSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error loading profiles:', error);
+      }
+    }
+
+    // Browse input file
+    document.getElementById('browseInput').addEventListener('click', async () => {
+      const path = await electronAPI.selectInputFile();
+      if (path) {
+        document.getElementById('inputPath').value = path;
+        checkFormValid();
+      }
+    });
+
+    // Browse output folder
+    document.getElementById('browseOutput').addEventListener('click', async () => {
+      const path = await electronAPI.selectOutputFolder();
+      if (path) {
+        document.getElementById('outputPath').value = path;
+        checkFormValid();
+      }
+    });
+
+    // Check if form is valid
+    function checkFormValid() {
+      const inputPath = document.getElementById('inputPath').value;
+      const outputPath = document.getElementById('outputPath').value;
+      const profile = document.getElementById('profile').value;
+      const sanitizeBtn = document.getElementById('sanitizeBtn');
+
+      sanitizeBtn.disabled = !(inputPath && outputPath && profile);
+    }
+
+    document.getElementById('profile').addEventListener('change', checkFormValid);
+
+    // Handle form submission
+    document.getElementById('sanitizeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const inputPath = document.getElementById('inputPath').value;
+      const outputPath = document.getElementById('outputPath').value;
+      const profile = document.getElementById('profile').value;
+
+      const sanitizeBtn = document.getElementById('sanitizeBtn');
+      const progressContainer = document.getElementById('progressContainer');
+      const progressOutput = document.getElementById('progressOutput');
+      const status = document.getElementById('status');
+
+      // Reset UI
+      sanitizeBtn.disabled = true;
+      progressContainer.classList.add('active');
+      progressOutput.textContent = 'Starting sanitization...\n';
+      status.className = 'status';
+      status.textContent = '';
+
+      // Listen for progress updates
+      electronAPI.onSanitizeProgress((data) => {
+        progressOutput.textContent += data;
+        progressOutput.scrollTop = progressOutput.scrollHeight;
+      });
+
+      try {
+        const result = await electronAPI.sanitize({
+          inputPath,
+          outputPath,
+          profile,
+        });
+
+        status.className = 'status success';
+        status.textContent = `✓ Sanitization complete! Check the output folder for your kid-safe video.`;
+        sanitizeBtn.disabled = false;
+      } catch (error) {
+        status.className = 'status error';
+        status.textContent = `✗ Error: ${error.error || error.message || 'Unknown error occurred'}`;
+        sanitizeBtn.disabled = false;
+      }
+    });
+
+    // Initialize
+    loadProfiles();
+  </script>
+</body>
+</html>
+
